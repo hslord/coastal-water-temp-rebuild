@@ -1,8 +1,15 @@
 """Monthly means: per station, year, month rows (docs/spec.md, Monthly-means storage)."""
 import csv
+import statistics
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+
+# Screening for bad sensor readings (docs/decisions.md): a station-month whose mean is this far
+# from the station's median for that calendar month is left out of the table values, when the
+# station has at least MIN_YEARS years of that month. Stored rows are never changed.
+MAX_GAP_F = 15.0
+MIN_YEARS = 8
 
 FIELDS = ("station_id", "year", "month", "n_obs", "mean_f")
 
@@ -49,14 +56,43 @@ def stored_years(rows):
     return {(r.station_id, r.year) for r in rows}
 
 
+def merge_duplicates(rows):
+    """One row per (station, year, month): rows with the same key are combined, weighted by n_obs.
+
+    Happens when a yearly file holds a reading stamped in the previous year (for example NDBC
+    2009 files hold 2008-12-31 23:50).
+    """
+    groups = defaultdict(list)
+    for r in rows:
+        groups[(r.station_id, r.year, r.month)].append(r)
+    out = []
+    for (s, y, m), g in groups.items():
+        n = sum(r.n_obs for r in g)
+        out.append(g[0] if len(g) == 1 else MeanRow(s, y, m, n, sum(r.mean_f * r.n_obs for r in g) / n))
+    return out
+
+
+def screen(rows, end_year, max_gap=MAX_GAP_F, min_years=MIN_YEARS):
+    """Split rows up to end_year into (kept, excluded) by the median-gap rule above."""
+    by_month = defaultdict(list)
+    for r in merge_duplicates(rows):
+        if r.year <= end_year:
+            by_month[(r.station_id, r.month)].append(r)
+    kept, excluded = [], []
+    for group in by_month.values():
+        median = statistics.median(r.mean_f for r in group) if len(group) >= min_years else None
+        for r in group:
+            (excluded if median is not None and abs(r.mean_f - median) >= max_gap else kept).append(r)
+    return kept, excluded
+
+
 def aggregate(rows, end_year):
-    """{station_id: {month: weighted mean °F}} over years up to end_year. Months with no data are absent."""
+    """{station_id: {month: weighted mean °F}} over screened years up to end_year. Months with no data are absent."""
     total = defaultdict(float)
     count = defaultdict(int)
-    for r in rows:
-        if r.year <= end_year:
-            total[(r.station_id, r.month)] += r.mean_f * r.n_obs
-            count[(r.station_id, r.month)] += r.n_obs
+    for r in screen(rows, end_year)[0]:
+        total[(r.station_id, r.month)] += r.mean_f * r.n_obs
+        count[(r.station_id, r.month)] += r.n_obs
     out = defaultdict(dict)
     for (s, m), n in count.items():
         out[s][m] = total[(s, m)] / n

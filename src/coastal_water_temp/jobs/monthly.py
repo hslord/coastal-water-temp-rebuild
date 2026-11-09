@@ -60,7 +60,7 @@ def run(region_path, data_dir="data", cache_dir="cache", site_dir="site", now=No
         start = FIRST_YEAR[s.source] if last is None else last + 1
         for year in range(start, end_year + 1):
             new += means.monthly_rows(s.id, fetch[s.source](s.id, year))
-    rows = [r for r in rows if r.year <= end_year] + new
+    rows = means.merge_duplicates([r for r in rows if r.year <= end_year] + new)
     means.write_means(means_path, rows)
     out = Path(site_dir) / f"{region.id}.html"
     out.parent.mkdir(parents=True, exist_ok=True)

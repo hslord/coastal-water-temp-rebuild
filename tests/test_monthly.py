@@ -124,3 +124,13 @@ def test_block_leaves_stored_means_unchanged(tmp_path):
 def test_no_active_station_for_a_source_is_an_error(tmp_path):
     with pytest.raises(RuntimeError, match="hourly job"):
         run(tmp_path, Fake({}), Fake({}), recent_stations=("44007",))
+
+
+def test_reading_stamped_in_the_previous_year_merges_into_one_december_row(tmp_path):
+    rows = [MeanRow("44007", 2025, 12, 700, 40.0), MeanRow("8447930", 2025, 12, 700, 40.0), MeanRow("44005", 2024, 12, 700, 40.0)]
+    spill = [(utc(2025, 12, 31, 23), 50.0)] + h(2026)  # the 2026 file carries one reading stamped 2025-12-31 23:xx
+    ndbc = Fake({("44007", 2026): spill})
+    cps = Fake({("8447930", 2026): h(2026)})
+    _, data = run(tmp_path, ndbc, cps, rows=rows)
+    stored = [r for r in means.read_means(data / "means" / "t.csv") if (r.station_id, r.year, r.month) == ("44007", 2025, 12)]
+    assert len(stored) == 1 and stored[0].n_obs == 701

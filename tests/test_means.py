@@ -41,3 +41,37 @@ def test_csv_round_trip_is_sorted_and_identical_on_rerun(tmp_path):
 def test_read_missing_file_is_empty_and_stored_years(tmp_path):
     assert means.read_means(tmp_path / "none.csv") == []
     assert means.stored_years([MeanRow("S", 2020, 1, 1, 1.0), MeanRow("S", 2020, 2, 1, 1.0)]) == {("S", 2020)}
+
+
+def jan(year, mean, n=100):
+    return MeanRow("S", year, 1, n, mean)
+
+
+def test_merge_duplicates_combines_same_key_weighted():
+    rows = [MeanRow("S", 2008, 12, 700, 40.0), MeanRow("S", 2008, 12, 1, 80.0), MeanRow("S", 2009, 12, 5, 41.0)]
+    out = means.merge_duplicates(rows)
+    assert len(out) == 2
+    merged = next(r for r in out if r.year == 2008)
+    assert merged.n_obs == 701 and merged.mean_f == pytest.approx((700 * 40 + 80) / 701)
+
+
+def test_screen_excludes_months_15f_or_more_from_the_station_median():
+    rows = [jan(2000 + i, 40.0 + i * 0.1) for i in range(8)] + [jan(2010, 56.0), jan(2011, 54.9)]
+    # median of the ten values is about 40.5; 56.0 is 15.5 away (excluded), 54.9 is 14.4 away (kept)
+    kept, excluded = means.screen(rows, 2025)
+    assert [r.year for r in excluded] == [2010]
+    assert len(kept) == 9
+    assert means.aggregate(rows, 2025)["S"][1] == pytest.approx(sum(r.mean_f for r in kept) / 9)
+
+
+def test_screen_gap_of_exactly_15_is_excluded():
+    rows = [jan(2000 + i, 40.0) for i in range(8)] + [jan(2020, 55.0)]
+    assert [r.year for r in means.screen(rows, 2025)[1]] == [2020]
+
+
+def test_screen_needs_at_least_8_years_and_ignores_years_after_end_year():
+    few = [jan(2000 + i, 40.0) for i in range(6)] + [jan(2020, 90.0)]
+    assert means.screen(few, 2025)[1] == []
+    many = [jan(2000 + i, 40.0) for i in range(8)] + [jan(2026, 90.0)]
+    kept, excluded = means.screen(many, 2025)
+    assert excluded == [] and len(kept) == 8
