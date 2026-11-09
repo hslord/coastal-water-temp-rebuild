@@ -60,7 +60,32 @@ def test_hourly_history_missing_file_is_empty_and_failure_raises():
         ndbc.hourly_history("44007", 2024, get=lambda url: resp(status=503))
 
 
-def test_two_digit_year_is_rejected_not_guessed():
-    text = "#YY MM DD hh mm WTMP\n#yr mo dy hr mn degC\n99 01 01 00 00 5.0\n"
+def test_old_layouts_parse(tmp_path):
+    # 1979: no '#', no units line, 2-digit year, no minute column; 3-hourly rows; WTMP 06.9
+    r = list(ndbc.parse((FIX / "ndbc_yearly_44005_1979.txt").read_text()))
+    assert r[0] == (utc(1979, 1, 1, 0), 6.9) and len(r) == 5
+    # 1999: 4-digit year, no minute column; the first row has WTMP 999.0 and is dropped
+    r = list(ndbc.parse((FIX / "ndbc_yearly_44005_1999.txt").read_text()))
+    assert r[0] == (utc(1999, 1, 1, 1), 5.6)
+    r = list(ndbc.parse((FIX / "ndbc_yearly_44005_2004.txt").read_text()))
+    assert r[0] == (utc(2004, 1, 1, 0), 6.8) and len(r) == 3
+
+
+def test_hourly_history_cache_is_reused(tmp_path):
+    gz = gzip.compress(YEARLY.encode())
+    calls = []
+
+    def get(url):
+        calls.append(url)
+        return resp(content=gz)
+
+    a = ndbc.hourly_history("44007", 2024, get=get, cache_dir=tmp_path)
+    b = ndbc.hourly_history("44007", 2024, get=get, cache_dir=tmp_path)
+    assert a == b and len(calls) == 1
+    ndbc.hourly_history("44005", 2013, get=lambda u: resp(status=404), cache_dir=tmp_path)
+    assert not (tmp_path / "ndbc_44005_2013.txt.gz").exists()
+
+
+def test_unsupported_format_raises():
     with pytest.raises(ValueError):
-        list(ndbc.parse(text))
+        list(ndbc.parse("FOO BAR\n1 2\n"))
