@@ -1,0 +1,114 @@
+id = "northern-atlantic-coast"
+title = "Northern Atlantic Coast"
+timezone = "America/New_York"
+
+# Names are copied as returned by the sources (docs/data_report.md); edit freely.
+[[stations]]
+id = "44005"
+source = "ndbc"
+name = "GULF OF MAINE - 78 NM East of Portsmouth, NH"
+
+[[stations]]
+id = "44007"
+source = "ndbc"
+name = "PORTLAND - 12 NM Southeast of Portland,ME"
+
+[[stations]]
+id = "44008"
+source = "ndbc"
+name = "NANTUCKET 54 NM Southeast of Nantucket"
+
+[[stations]]
+id = "44011"
+source = "ndbc"
+name = "GEORGES BANK 170 NM East of Hyannis, MA"
+
+[[stations]]
+id = "44013"
+source = "ndbc"
+name = "BOSTON 16 NM East of Boston, MA"
+
+[[stations]]
+id = "44018"
+source = "ndbc"
+name = "CAPE COD - 9 NM North of Provincetown, MA"
+
+[[stations]]
+id = "44020"
+source = "ndbc"
+name = "NANTUCKET SOUND"
+
+[[stations]]
+id = "8410140"
+source = "coops"
+name = "Eastport"
+
+[[stations]]
+id = "8411060"
+source = "coops"
+name = "Cutler Farris Wharf"
+
+[[stations]]
+id = "8413320"
+source = "coops"
+name = "Bar Harbor"
+
+[[stations]]
+id = "8418150"
+source = "coops"
+name = "Portland"
+
+[[stations]]
+id = "8447386"
+source = "coops"
+name = "Fall River"
+
+[[stations]]
+id = "8447435"
+source = "coops"
+name = "Chatham"
+
+[[stations]]
+id = "8447930"
+source = "coops"
+name = "Woods Hole"
+
+[[stations]]
+id = "8449130"
+source = "coops"
+name = "Nantucket Island"
+
+[[stations]]
+id = "8452660"
+source = "coops"
+name = "Newport"
+
+[[stations]]
+id = "8452944"
+source = "coops"
+name = "Conimicut Light"
+
+[[stations]]
+id = "8454000"
+source = "coops"
+name = "Providence"
+
+[[stations]]
+id = "8454049"
+source = "coops"
+name = "Quonset Point"
+
+[[stations]]
+id = "8461490"
+source = "coops"
+name = "New London"
+
+[[stations]]
+id = "8465705"
+source = "coops"
+name = "New Haven"
+
+[[stations]]
+id = "8467150"
+source = "coops"
+name = "Bridgeport"
