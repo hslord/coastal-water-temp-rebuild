@@ -62,16 +62,16 @@ def test_recent_cells_link_to_station_pages_and_names_are_plain_text():
     assert p.rows[1][2:4] == ["41.2", "2026-01-15 12:18 EST"]
 
 
-def test_no_reading_or_reading_older_than_24_hours_is_blank_and_keeps_means():
-    old = datetime(2026, 1, 14, 17, 59, tzinfo=UTC)
+def test_no_reading_or_reading_older_than_48_hours_is_blank_and_keeps_means():
+    old = datetime(2026, 1, 13, 17, 59, tzinfo=UTC)
     p = page({"44007": (old, 41.0)})
     assert p.rows[1][2:4] == ["", ""] and p.rows[3][2:4] == ["", ""]
     assert p.links == []
     assert p.rows[1][4] == "20.0"  # January weighted mean, still shown
 
 
-def test_reading_exactly_24_hours_old_is_shown():
-    t = datetime(2026, 1, 14, 18, 0, tzinfo=UTC)
+def test_reading_exactly_48_hours_old_is_shown():
+    t = datetime(2026, 1, 13, 18, 0, tzinfo=UTC)
     assert page({"44007": (t, 41.0)}).rows[1][2] == "41.0"
 
 

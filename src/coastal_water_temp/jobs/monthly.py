@@ -13,7 +13,7 @@ from pathlib import Path
 from coastal_water_temp import means
 from coastal_water_temp.adapters import coops, ndbc
 from coastal_water_temp.config import load_region
-from coastal_water_temp.jobs.hourly import read_recent
+from coastal_water_temp.jobs.recent import read_recent
 from coastal_water_temp.render import render_page
 
 # First year to try for a station with no stored rows. NDBC: earliest yearly file seen is 1978
@@ -39,7 +39,7 @@ def common_end_year(region, recent, now, fetch):
     sources = {s.source for s in region.stations}
     missing = sources - set(active)
     if missing:
-        raise RuntimeError(f"no station with a reading in the last 365 days for: {sorted(missing)}; run the hourly job first")
+        raise RuntimeError(f"no station with a reading in the last 365 days for: {sorted(missing)}; run the recent job first")
     for year in range(now.year - 1, now.year - 4, -1):
         if all(any(fetch[src](st, year) for st in active[src]) for src in sources):
             return year

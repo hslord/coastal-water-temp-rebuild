@@ -1,8 +1,8 @@
-"""Hourly job: update each station's latest reading, then rebuild the region page.
+"""Recent job (daily): update each station's latest reading, then rebuild the region page.
 
 Reads (never writes) data/means/<region id>.csv. Writes data/recent/<region id>.csv and
 site/<region id>.html. A failed fetch keeps the stored reading; the page blanks any reading
-older than 24 hours (docs/decisions.md).
+older than 48 hours (docs/decisions.md).
 """
 import csv
 import sys

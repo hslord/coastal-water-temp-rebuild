@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from coastal_water_temp import means
 from coastal_water_temp.adapters import coops
-from coastal_water_temp.jobs import hourly
+from coastal_water_temp.jobs import recent
 from coastal_water_temp.means import MeanRow
 
 REGION = """id = "t"
@@ -36,7 +36,7 @@ def setup(tmp_path, stored=None):
     data = tmp_path / "data"
     means.write_means(data / "means" / "t.csv", [MeanRow("44007", 2025, 1, 2, 15.0)])
     if stored:
-        hourly.write_recent(data / "recent" / "t.csv", stored)
+        recent.write_recent(data / "recent" / "t.csv", stored)
     return region, data
 
 
@@ -46,8 +46,8 @@ def adapters(ndbc_latest, coops_latest):
 
 def run(tmp_path, ad, stored=None):
     region, data = setup(tmp_path, stored)
-    w = hourly.run(region, data, tmp_path / "site", NOW, ad)
-    return w, hourly.read_recent(data / "recent" / "t.csv"), (tmp_path / "site" / "t.html").read_text()
+    w = recent.run(region, data, tmp_path / "site", NOW, ad)
+    return w, recent.read_recent(data / "recent" / "t.csv"), (tmp_path / "site" / "t.html").read_text()
 
 
 def test_fresh_readings_are_stored_and_shown(tmp_path):
@@ -57,7 +57,7 @@ def test_fresh_readings_are_stored_and_shown(tmp_path):
     assert "57.2" in page and "52.7" in page
 
 
-def test_failed_fetch_keeps_stored_reading_within_24_hours(tmp_path):
+def test_failed_fetch_keeps_stored_reading_within_48_hours(tmp_path):
     def boom(i):
         raise RuntimeError("down")
 
@@ -67,8 +67,8 @@ def test_failed_fetch_keeps_stored_reading_within_24_hours(tmp_path):
     assert "55.0" in page and any("8447930" in x for x in w)
 
 
-def test_stored_reading_older_than_24_hours_is_blank_on_the_page(tmp_path):
-    stored = {"8447930": (utc(2026, 11, 8, 20, 0), 55.0)}
+def test_stored_reading_older_than_48_hours_is_blank_on_the_page(tmp_path):
+    stored = {"8447930": (utc(2026, 11, 7, 20, 0), 55.0)}
     _, recent, page = run(tmp_path, adapters(lambda i: None, lambda i: None), stored)
     assert "8447930" in recent and "55.0" not in page
 
@@ -95,12 +95,12 @@ def test_means_file_is_not_touched(tmp_path):
     region, data = setup(tmp_path)
     p = Path(data) / "means" / "t.csv"
     before = p.read_bytes()
-    hourly.run(region, data, tmp_path / "site", NOW, adapters(lambda i: None, lambda i: None))
+    recent.run(region, data, tmp_path / "site", NOW, adapters(lambda i: None, lambda i: None))
     assert p.read_bytes() == before
 
 
 def test_recent_csv_round_trip(tmp_path):
     p = tmp_path / "r.csv"
-    hourly.write_recent(p, {"b": (utc(2026, 1, 1, 5, 6), 1.25), "a": (utc(2026, 1, 1, 0, 0), 2.0)})
+    recent.write_recent(p, {"b": (utc(2026, 1, 1, 5, 6), 1.25), "a": (utc(2026, 1, 1, 0, 0), 2.0)})
     assert p.read_text().splitlines()[1].startswith("a,2026-01-01T00:00:00Z")
-    assert hourly.read_recent(p)["b"][0] == utc(2026, 1, 1, 5, 6)
+    assert recent.read_recent(p)["b"][0] == utc(2026, 1, 1, 5, 6)

@@ -11,14 +11,14 @@ STATION_URL = {
     "ndbc": "https://www.ndbc.noaa.gov/station_page.php?station={}",
     "coops": "https://tidesandcurrents.noaa.gov/physocean.html?id={}",
 }
-RECENT_WINDOW = timedelta(hours=24)
+RECENT_WINDOW = timedelta(hours=48)
 
 
 def table_rows(region, means_rows, end_year, recent, now):
     """One row per configured station, in config order: a list of (text, href or None) cells.
 
     `recent` maps station id to (observation_time_utc, temp_f) or None. A reading older than
-    24 hours is shown as blank cells, like no reading.
+    48 hours is shown as blank cells, like no reading.
     """
     monthly = aggregate(means_rows, end_year)
     tz = ZoneInfo(region.timezone)

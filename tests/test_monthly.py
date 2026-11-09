@@ -4,7 +4,7 @@ import pytest
 
 from coastal_water_temp import means
 from coastal_water_temp.adapters import coops
-from coastal_water_temp.jobs import hourly, monthly
+from coastal_water_temp.jobs import monthly, recent
 from coastal_water_temp.means import MeanRow
 
 REGION = """id = "t"
@@ -45,7 +45,7 @@ def setup(tmp_path, recent_stations=("44007", "8447930"), rows=()):
     region = tmp_path / "t.toml"
     region.write_text(REGION)
     data = tmp_path / "data"
-    hourly.write_recent(data / "recent" / "t.csv", {s: (utc(2027, 1, 20, 10), 50.0) for s in recent_stations})
+    recent.write_recent(data / "recent" / "t.csv", {s: (utc(2027, 1, 20, 10), 50.0) for s in recent_stations})
     if rows:
         means.write_means(data / "means" / "t.csv", list(rows))
     return region, data
@@ -122,7 +122,7 @@ def test_block_leaves_stored_means_unchanged(tmp_path):
 
 
 def test_no_active_station_for_a_source_is_an_error(tmp_path):
-    with pytest.raises(RuntimeError, match="hourly job"):
+    with pytest.raises(RuntimeError, match="recent job"):
         run(tmp_path, Fake({}), Fake({}), recent_stations=("44007",))
 
 
