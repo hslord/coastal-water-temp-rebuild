@@ -1,5 +1,5 @@
 import os, json, glob, csv
-from datetime import datetime
+from datetime import datetime, timezone
 ROOT = os.path.dirname(os.path.abspath(__file__)); RAW = f"{ROOT}/raw"
 hist = {r["station"]: r for r in json.load(open(f"{ROOT}/history_cols.json"))}
 rtc = {r["station"]: r for r in json.load(open(f"{ROOT}/realtime_check.json"))["rows"]}
@@ -11,7 +11,9 @@ for s, h in hist.items():
     if h["source"] == "CO-OPS": r["interval_min"] = 6
     else: r["interval_min"] = 10
     if h["realtime"] != "PASS":
-        r["note"] = "no realtime data: excluded from region table"; rows.append(r); continue
+        lv = json.load(open(f"{ROOT}/last_valid_failed.json"))[s]
+        r["last_native"], r["last_hourly"] = lv["last_native"], lv["last_hourly"]
+        r["note"] = "no valid reading in the last 365 days: excluded from region table"; rows.append(r); continue
     if h["source"] == "CO-OPS":
         nat = []
         for p in sorted(glob.glob(f"{RAW}/co_26_6min_{s}_*.json")):
@@ -46,7 +48,7 @@ with open(f"{ROOT}/coverage_table.csv", "w", newline="") as f:
     w = csv.writer(f); w.writerow([c[1] for c in cols])
     for r in rows: w.writerow([r.get(k, "") if r.get(k) is not None else "" for k, _ in cols])
 with open(f"{ROOT}/coverage_table.md", "w") as f:
-    f.write(f"Coverage table, run {datetime.utcnow():%Y-%m-%d %H:%M} UTC. Blank = not applicable (see plan).\n\n")
+    f.write(f"Coverage table, run {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC. Blank = not applicable (see plan).\n\n")
     f.write("| " + " | ".join(c[1] for c in cols) + " |\n|" + "---|" * len(cols) + "\n")
     for r in rows: f.write("| " + " | ".join("" if r.get(k) is None else str(r.get(k, "")) for k, _ in cols) + " |\n")
 print(open(f"{ROOT}/coverage_table.md").read())
