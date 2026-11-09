@@ -39,8 +39,6 @@ out = []
 for r in rt:
     s = r["station"]
     row = dict(station=s, source=r["source"], realtime=r["realtime"].split(":")[0])
-    if r["realtime"] != "PASS":
-        out.append(row); continue
     v = coops_valid(s) if r["source"] == "CO-OPS" else ndbc_valid(s)
     first = min(v)
     row["oldest_hourly"] = first.strftime("%Y-%m-%d")

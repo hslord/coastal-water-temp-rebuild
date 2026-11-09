@@ -13,27 +13,30 @@ for s, h in hist.items():
     if h["realtime"] != "PASS":
         lv = json.load(open(f"{ROOT}/last_valid_failed.json"))[s]
         r["last_native"], r["last_hourly"] = lv["last_native"], lv["last_hourly"]
-        r["note"] = "no valid reading in the last 365 days: excluded from region table"; rows.append(r); continue
+        r["note"] = "no valid reading in the last 365 days: stays in region table with blank recent cells"
     if h["source"] == "CO-OPS":
         nat = []
         for p in sorted(glob.glob(f"{RAW}/co_26_6min_{s}_*.json")):
             nat += [(datetime.strptime(x["t"], "%Y-%m-%d %H:%M")) for x in json.load(open(p)).get("data", []) if x["v"] != ""]
         hr = [datetime.strptime(x["t"], "%Y-%m-%d %H:%M") for x in json.load(open(f"{RAW}/co_26_h_{s}.json")).get("data", []) if x["v"] != ""]
-        r["last_native"] = max(nat).strftime("%Y-%m-%d %H:%M")
-        r["last_hourly"] = rtc[s]["last_valid_hourly"]
+        if h["realtime"] == "PASS":
+            r["last_native"] = max(nat).strftime("%Y-%m-%d %H:%M")
+            r["last_hourly"] = rtc[s]["last_valid_hourly"]
         r["native26"] = round(100 * len([t for t in nat if t < CUT]) / (DAYS26 * 240), 1)
         r["hourly26"] = round(100 * len([t for t in hr if t < CUT]) / (DAYS26 * 24), 1)
         r["window26"] = "2026-01-01..2026-11-08"
     else:
-        lines = open(f"{RAW}/nd_rt_{s}.txt").read().splitlines()
+        rtp = f"{RAW}/nd_rt_{s}.txt"
+        lines = open(rtp).read().splitlines() if os.path.exists(rtp) else ["#WTMP", "#"]
         wi = lines[0].lstrip("#").split().index("WTMP"); v = []
         for ln in lines[2:]:
             f = ln.split()
             if f[wi] == "MM": continue
             v.append(datetime(int(f[0]), int(f[1]), int(f[2]), int(f[3]), int(f[4])))
         win = [t for t in v if datetime(2026, 9, 25) <= t < CUT]
-        r["last_native"] = max(v).strftime("%Y-%m-%d %H:%M")
-        r["last_hourly"] = max(v).replace(minute=0).strftime("%Y-%m-%d %H:%M")
+        if h["realtime"] == "PASS":
+            r["last_native"] = max(v).strftime("%Y-%m-%d %H:%M")
+            r["last_hourly"] = max(v).replace(minute=0).strftime("%Y-%m-%d %H:%M")
         r["native26"] = round(100 * len(win) / (45 * 144), 1)
         r["hourly26"] = round(100 * len({t.replace(minute=0) for t in win}) / (45 * 24), 1)
         r["window26"] = "last 45 days (2026-09-25..2026-11-08)"
