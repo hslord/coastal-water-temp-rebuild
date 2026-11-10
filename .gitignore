@@ -228,3 +228,7 @@ cache/
 
 # Working notes kept locally, not published
 docs/
+
+# Instructions for Claude, kept locally
+CLAUDE.md
+.claude/
