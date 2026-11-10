@@ -1,0 +1,42 @@
+name: Update monthly means
+
+on:
+  schedule:
+    - cron: "43 9 2 * *"  # monthly, the 2nd at 09:43 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: data-and-site
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --locked
+      - name: Update monthly means and build pages
+        env:
+          PYTHONPATH: src
+        run: |
+          for region in config/regions/*.toml; do
+            uv run python -m coastal_water_temp.jobs.monthly "$region"
+          done
+      - name: Commit data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "Update monthly means"
+          git push
+      - name: Make the first region the home page
+        run: cp "site/$(ls site | grep -v '^index.html$' | head -n 1)" site/index.html
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
