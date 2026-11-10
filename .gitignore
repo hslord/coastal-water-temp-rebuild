@@ -225,3 +225,6 @@ __marimo__/
 
 # Local raw-response cache and generated output
 cache/
+
+# Working notes kept locally, not published
+docs/
