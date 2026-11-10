@@ -2,7 +2,7 @@ id = "northern-atlantic-coast"
 title = "Northern Atlantic Coast"
 timezone = "America/New_York"
 
-# Names are copied as returned by the sources (docs/data_report.md); edit freely.
+# Names are copied as returned by the sources; edit freely.
 [[stations]]
 id = "44005"
 source = "ndbc"

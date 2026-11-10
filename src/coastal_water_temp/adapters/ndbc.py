@@ -1,7 +1,7 @@
 """NDBC adapter: realtime file for `latest`, yearly stdmet files for `hourly_history`.
 
-Formats verified in docs/data_report.md and against tests/fixtures. Access rule (docs/decisions.md,
-applied to NDBC too): serial requests, 1 per second.
+Formats verified against tests/fixtures. Access rule (the same as CO-OPS): serial requests,
+1 per second.
 """
 import gzip
 import time

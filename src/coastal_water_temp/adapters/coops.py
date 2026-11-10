@@ -1,7 +1,7 @@
 """CO-OPS adapter: `date=latest` for `latest`, hourly (`interval=h`) year requests for `hourly_history`.
 
-Formats and limits verified in docs/data_report.md and against tests/fixtures. Access rules
-(docs/decisions.md): serial requests, 1 per second, stop on HTTP 403 or 429.
+Formats and limits verified against tests/fixtures. Access rules: serial requests, 1 per second,
+stop on HTTP 403 or 429.
 """
 import json
 import time

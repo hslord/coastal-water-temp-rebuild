@@ -1,4 +1,4 @@
-"""Region config: one TOML file per region (see docs/spec.md, Region config)."""
+"""Region config: one TOML file per region."""
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path

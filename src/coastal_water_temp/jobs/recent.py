@@ -2,7 +2,7 @@
 
 Reads (never writes) data/means/<region id>.csv. Writes data/recent/<region id>.csv and
 site/<region id>.html. A failed fetch keeps the stored reading; the page blanks any reading
-older than 48 hours (docs/decisions.md).
+older than 48 hours.
 """
 import csv
 import sys

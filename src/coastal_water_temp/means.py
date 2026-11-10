@@ -1,11 +1,11 @@
-"""Monthly means: per station, year, month rows (docs/spec.md, Monthly-means storage)."""
+"""Monthly means: per station, year, month rows."""
 import csv
 import statistics
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-# Screening for bad sensor readings (docs/decisions.md): a station-month whose mean is this far
+# Screening for bad sensor readings: a station-month whose mean is this far
 # from the station's median for that calendar month is left out of the table values, when the
 # station has at least MIN_YEARS years of that month. Stored rows are never changed.
 MAX_GAP_F = 15.0

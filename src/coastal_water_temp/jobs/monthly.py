@@ -1,6 +1,6 @@
 """Monthly job: extend the monthly means with newly completed years, then rebuild the page.
 
-Rules (docs/decisions.md): completed years only; a year enters the means only when both sources
+Rules: completed years only; a year enters the means only when both sources
 have data for it (a source "has" a year when one of its stations with a reading in the last 365
 days has data for it); only station-years after a station's last stored year are fetched, and a
 station with no rows starts at its source's first year. The means CSV is written once, after all
@@ -16,8 +16,8 @@ from coastal_water_temp.config import load_region
 from coastal_water_temp.jobs.recent import read_recent
 from coastal_water_temp.render import render_page
 
-# First year to try for a station with no stored rows. NDBC: earliest yearly file seen is 1978
-# (docs/data_report.md). CO-OPS: no data before 1995 in the 1990 and 1995 probes, so 1990 is a floor.
+# First year to try for a station with no stored rows. NDBC: earliest yearly file seen is 1978.
+# CO-OPS: no data before 1995 in the 1990 and 1995 probes, so 1990 is a floor.
 FIRST_YEAR = {"ndbc": 1970, "coops": 1990}
 ACTIVE_WINDOW = timedelta(days=365)
 

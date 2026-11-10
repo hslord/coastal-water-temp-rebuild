@@ -1,4 +1,4 @@
-"""Build a region's static HTML page (docs/spec.md, Output). The CSV is built in the browser on click."""
+"""Build a region's static HTML page. The CSV is built in the browser on click."""
 from datetime import timedelta
 from html import escape
 from zoneinfo import ZoneInfo
