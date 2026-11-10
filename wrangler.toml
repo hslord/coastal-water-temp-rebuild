@@ -1,6 +1,0 @@
-# Cloudflare Worker that serves the generated pages in site/ as static files.
-name = "coastal-water-temps"
-compatibility_date = "2025-01-01"
-
-[assets]
-directory = "./site"

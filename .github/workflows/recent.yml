@@ -9,12 +9,11 @@ concurrency:
   group: data-and-site
   cancel-in-progress: false
 
-permissions:
-  contents: write
-
 jobs:
-  refresh:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -35,8 +34,20 @@ jobs:
           git push
       - name: Make the first region the home page
         run: cp "site/$(ls site | grep -v '^index.html$' | head -n 1)" site/index.html
-      - uses: cloudflare/wrangler-action@v3
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
