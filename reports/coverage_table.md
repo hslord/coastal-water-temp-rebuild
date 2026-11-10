@@ -1,4 +1,4 @@
-Coverage table, run 2026-11-09 20:56 UTC. Blank = not applicable (see plan).
+Coverage table, run 2026-11-09 20:56 UTC. Blank = not applicable (see the README).
 
 | Station ID | Source | Native interval (min) | Realtime check | Last valid native reading (UTC) | Last valid hourly reading (UTC) | 2026 native % non-null | 2026 hourly % non-null | 2026 window | Oldest hourly reading | Full history % (excl. 2026) | Last 5 yr % | Last 10 yr % | Last 20 yr % | Last 30 yr % | Note |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
