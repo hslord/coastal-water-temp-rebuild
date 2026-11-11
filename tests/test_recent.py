@@ -62,7 +62,8 @@ def test_fresh_readings_are_stored_and_shown(tmp_path):
 
 def test_failed_fetch_keeps_stored_reading_within_48_hours(tmp_path):
     def boom(i):
-        raise RuntimeError("down")
+        if i == "8447930":
+            raise RuntimeError("down")
 
     stored = {"8447930": (utc(2026, 11, 9, 9, 0), 55.0)}
     w, recent, page = run(tmp_path, adapters(lambda i: None, boom), stored)
@@ -76,16 +77,18 @@ def test_stored_reading_older_than_48_hours_is_blank_on_the_page(tmp_path):
     assert "8447930" in recent and "55.0" not in page
 
 
-def test_block_stops_that_source_but_not_the_others(tmp_path):
+def test_block_stops_that_source_and_fails_the_run(tmp_path):
     calls = []
 
     def blocked(i):
         calls.append(i)
         raise BlockedError("HTTP 403")
 
-    w, recent, page = run(tmp_path, adapters(lambda i: (utc(2026, 11, 9, 20, 30), 52.7), blocked))
-    assert calls == ["8447930"] and "44007" in recent and "8454000" not in recent
-    assert len(w) == 2 and "52.7" in page
+    region, data = setup(tmp_path)
+    with pytest.raises(RuntimeError, match="every coops station fetch failed"):
+        recent.run(region, data, tmp_path / "site", NOW, SETTINGS,
+                   adapters(lambda i: (utc(2026, 11, 9, 20, 30), 52.7), blocked))
+    assert calls == ["8447930"] and not (data / "recent").exists()
 
 
 def test_older_reading_from_source_does_not_replace_a_newer_stored_one(tmp_path):
@@ -109,11 +112,21 @@ def test_recent_csv_round_trip(tmp_path):
     assert read_recent(p)["b"][0] == utc(2026, 1, 1, 5, 6)
 
 
+def test_one_station_failing_in_a_source_only_warns(tmp_path):
+    def coops(i):
+        if i == "8447930":
+            raise RuntimeError("down")
+        return utc(2026, 11, 9, 20, 18), 57.2
+
+    w, recent, _ = run(tmp_path, adapters(lambda i: None, coops))
+    assert len(w) == 1 and set(recent) == {"8454000"}
+
+
 def test_every_station_failing_raises_and_writes_nothing(tmp_path):
     def boom(i):
         raise RuntimeError("down")
 
     region, data = setup(tmp_path)
-    with pytest.raises(RuntimeError, match="every station fetch failed"):
+    with pytest.raises(RuntimeError, match="station fetch failed"):
         recent.run(region, data, tmp_path / "site", NOW, SETTINGS, adapters(boom, boom))
     assert not (data / "recent").exists() and not (tmp_path / "site").exists()
