@@ -135,3 +135,19 @@ def test_reading_stamped_in_the_previous_year_merges_into_one_december_row(tmp_p
     _, data = run(tmp_path, ndbc, cps, rows=rows)
     stored = [r for r in means.read_means(data / "means" / "t.csv") if (r.station_id, r.year, r.month) == ("44007", 2025, 12)]
     assert len(stored) == 1 and stored[0].n_obs == 701
+
+
+def test_year_not_yet_published_by_one_source_leaves_the_end_year_unchanged(tmp_path):
+    rows = [MeanRow(s, 2025, 1, 2, 41.0) for s in ("44007", "8447930")] + [MeanRow("44005", 2024, 1, 2, 41.0)]
+    ndbc = Fake({})  # NDBC has no 2026 file yet
+    cps = Fake({("8447930", 2026): h(2026)})
+    (end, _), data = run(tmp_path, ndbc, cps, rows=rows)
+    assert end == 2025
+    assert all(r.year <= 2025 for r in means.read_means(data / "means" / "t.csv"))
+    # only the years after the stored end year were probed
+    assert {y for _, y in ndbc.calls if y != 2025} == {2026}
+
+
+def test_first_run_with_no_year_that_both_sources_have_is_an_error(tmp_path):
+    with pytest.raises(RuntimeError, match="no completed year"):
+        run(tmp_path, Fake({("44007", 2026): h(2026)}), Fake({("8447930", 2025): h(2025)}))

@@ -19,7 +19,6 @@ class Settings:
     screening_min_years: int
     recent_window: timedelta
     active_window: timedelta
-    end_year_lookback: int
     first_year: dict
     user_agent: str
     timeout_seconds: float
@@ -43,7 +42,6 @@ def load_settings(path) -> Settings:
         screening_min_years=int(data["screening"]["min_years"]),
         recent_window=timedelta(hours=data["display"]["recent_window_hours"]),
         active_window=timedelta(days=data["history"]["active_window_days"]),
-        end_year_lookback=int(data["history"]["end_year_lookback"]),
         first_year=first_year,
         user_agent=data["http"]["user_agent"],
         timeout_seconds=data["http"]["timeout_seconds"],

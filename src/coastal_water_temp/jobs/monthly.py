@@ -25,8 +25,14 @@ def make_fetchers(settings, cache_dir):
     }
 
 
-def common_end_year(region, recent, now, fetch, settings):
-    """Latest completed year (within settings.end_year_lookback years) that every source in the region has data for."""
+def common_end_year(region, recent, now, fetch, settings, stored_end):
+    """Latest completed year that every source in the region has data for, looking only forward.
+
+    The search covers the years after stored_end (the latest year already stored) up to the last
+    completed year; with nothing stored it starts at each source's first year in the settings. If
+    no year in that range has data for every source, the stored end year stays (an error if
+    nothing is stored).
+    """
     active = {}
     for s in region.stations:
         r = recent.get(s.id)
@@ -36,10 +42,18 @@ def common_end_year(region, recent, now, fetch, settings):
     missing = sources - set(active)
     if missing:
         raise RuntimeError(f"no station with a recent reading for: {sorted(missing)}; run the recent job first")
-    for year in range(now.year - 1, now.year - 1 - settings.end_year_lookback, -1):
-        if all(any(fetch[src](st, year) for st in active[src]) for src in sources):
-            return year
-    raise RuntimeError("no recent completed year has data for every source")
+    last_completed = now.year - 1
+    available = {}
+    for src in sources:
+        start = settings.first_year[src] if stored_end is None else stored_end + 1
+        available[src] = {y for y in range(start, last_completed + 1)
+                          if any(fetch[src](st, y) for st in active[src])}
+    common = set.intersection(*available.values())
+    if common:
+        return max(common)
+    if stored_end is None:
+        raise RuntimeError("no completed year has data for every source")
+    return stored_end
 
 
 def run(region_path, data_dir="data", cache_dir="cache", site_dir="site", now=None, settings=None, fetch=None):
@@ -50,7 +64,8 @@ def run(region_path, data_dir="data", cache_dir="cache", site_dir="site", now=No
     means_path = Path(data_dir) / "means" / f"{region.id}.csv"
     rows = means.read_means(means_path)
     recent = read_recent(Path(data_dir) / "recent" / f"{region.id}.csv")
-    end_year = common_end_year(region, recent, now, fetch, settings)
+    stored_end = max((r.year for r in rows), default=None)
+    end_year = common_end_year(region, recent, now, fetch, settings, stored_end)
     new = []
     for s in region.stations:
         last = max((r.year for r in rows if r.station_id == s.id), default=None)

@@ -1,28 +1,47 @@
-# Settings used by every region. Region files (config/regions/) hold only the region's own details.
+# Settings shared by every region. Each region's own details (title, time zone and stations)
+# are in config/regions/.
 
 [screening]
-# A station-month is left out of the monthly averages when its mean is this far (°F) from the
-# station's median for that calendar month, for stations with at least min_years years of that month.
+# Outlier screening for the monthly averages. A station-month is left out of the averages when
+# its mean temperature is max_gap_f degrees F or more away from that station's median for the same
+# calendar month. Screening applies only to stations with at least min_years years of data for
+# that month.
 max_gap_f = 15.0
 min_years = 8
 
 [display]
-# The recent reading is shown only if it is newer than this.
+# A station's recent temperature is shown only if its latest reading is newer than this many hours.
+# Older readings are shown as blank cells.
 recent_window_hours = 48
 
 [history]
-# A source "has" a year when one of its stations with a reading in the last active_window_days has data.
+# The monthly job needs the latest year for which both NDBC and CO-OPS have data, and the
+# averages run through that year. A source has data for a year if at least one of its active
+# stations has data for it. A station is active if its latest reading is within this many days.
+# Stations that stopped reporting are skipped.
 active_window_days = 365
-# How many completed years back to look for the latest year that every source has.
-end_year_lookback = 3
-# First year to try for a station with no stored rows (earlier than any station's first reading).
+
+# The search only looks forward. It checks each year after the latest year already stored, up to
+# the last completed year, and the new end year is the latest one that both sources have. NDBC
+# publishes its yearly files some months after a year ends, while CO-OPS has the data right away,
+# so for the first months of a year the averages still end at the previous year. On the first run,
+# when nothing is stored, the search starts at first_year below.
+
+# The first year to request for a station that has no stored data yet. It is set earlier than any
+# station's first reading, so years before a station began recording return no data.
 first_year = { ndbc = 1970, coops = 1990 }
 
 [http]
+# Sent with every data request to identify this project, and how long to wait for a response.
 user_agent = "coastal-water-temp-rebuild"
 timeout_seconds = 60
 
-# Order here is the display order: NDBC buoys first, then CO-OPS stations.
+# One section per data source. The order of the sections sets the order of the stations in each
+# table: NDBC buoys first, then CO-OPS stations.
+#   base_url              where requests are sent
+#   min_interval_seconds  minimum pause between requests to this source (requests run one at a time)
+#   station_page_url      the link on a station's recent temperature; {id} is replaced by the station ID
+#   no_data_message       text the source returns when it has no data (CO-OPS answers this way)
 [sources.ndbc]
 base_url = "https://www.ndbc.noaa.gov"
 min_interval_seconds = 1.0
