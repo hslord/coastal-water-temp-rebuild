@@ -6,6 +6,7 @@ import pytest
 from helpers import SETTINGS
 
 from coastal_water_temp.adapters import coops
+from coastal_water_temp.adapters.errors import BlockedError
 
 FIX = Path(__file__).parent / "fixtures"
 LATEST = (FIX / "coops_latest_8447930.json").read_text()
@@ -51,7 +52,7 @@ def test_hourly_history_no_data_year_is_empty():
 
 @pytest.mark.parametrize("status", [403, 429])
 def test_blocked_stops_with_blocked_error(status):
-    with pytest.raises(coops.BlockedError):
+    with pytest.raises(BlockedError):
         coops.latest("8447930", SETTINGS, get=lambda p: resp("{}", status))
 
 

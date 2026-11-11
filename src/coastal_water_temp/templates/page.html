@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title</title>
+<style>
+body { font-family: system-ui, sans-serif; margin: 16px; }
+.wrap { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 14px; }
+caption { font-weight: bold; text-align: left; padding-bottom: 8px; }
+th, td { border: 1px solid #999; padding: 4px 8px; white-space: nowrap; }
+td:nth-child(n+3) { text-align: right; }
+td:nth-child(2) { text-align: left; }
+button { margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<table id="t">
+<caption>$title</caption>
+<thead><tr>$head</tr></thead>
+<tbody>
+$body
+</tbody>
+</table>
+</div>
+<button type="button" onclick="downloadCsv()">Download CSV</button>
+<script>
+function csvField(s) { return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function csvText() {
+  const rows = [...document.querySelectorAll('#t tr')].map(tr =>
+    [...tr.children].map(c => csvField(c.textContent.trim())).join(','));
+  return rows.join('\n') + '\n';
+}
+function downloadCsv() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csvText()], {type: 'text/csv'}));
+  a.download = '$region_id.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>

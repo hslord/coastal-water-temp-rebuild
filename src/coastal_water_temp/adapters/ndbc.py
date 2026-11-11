@@ -1,7 +1,7 @@
 """NDBC adapter: realtime file for `latest`, yearly stdmet files for `hourly_history`.
 
 Formats verified against tests/fixtures. Requests are serial with the pause set in
-config/settings.toml.
+config/settings.toml, and HTTP 403 or 429 raises BlockedError.
 """
 import gzip
 import time
@@ -10,6 +10,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
+
+from coastal_water_temp.adapters.errors import BlockedError
 
 _last_request = [0.0]
 
@@ -67,6 +69,8 @@ def latest(station_id, settings, get=None):
     r = get(f"{settings.sources['ndbc'].base_url}/data/realtime2/{station_id}.txt")
     if r.status_code == 404:
         return None
+    if r.status_code in (403, 429):
+        raise BlockedError(f"NDBC realtime {station_id}: HTTP {r.status_code}")
     if r.status_code != 200:
         raise RuntimeError(f"NDBC realtime {station_id}: HTTP {r.status_code}")
     rows = list(parse(r.text))
@@ -90,6 +94,8 @@ def hourly_history(station_id, year, settings, get=None, cache_dir=None):
         r = get(f"{settings.sources['ndbc'].base_url}/data/historical/stdmet/{station_id}h{year}.txt.gz")
         if r.status_code == 404:
             return []
+        if r.status_code in (403, 429):
+            raise BlockedError(f"NDBC history {station_id} {year}: HTTP {r.status_code}")
         if r.status_code != 200:
             raise RuntimeError(f"NDBC history {station_id} {year}: HTTP {r.status_code}")
         raw = r.content

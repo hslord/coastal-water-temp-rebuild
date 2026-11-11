@@ -2,6 +2,7 @@
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,10 @@ def load_region(path, settings) -> Region:
     for s in stations:
         if s.source not in order:
             raise ValueError(f"station {s.id}: unknown source {s.source!r}")
+    try:
+        ZoneInfo(data["timezone"])
+    except (ZoneInfoNotFoundError, ValueError) as e:
+        raise ValueError(f"unknown time zone {data['timezone']!r}") from e
     ids = [s.id for s in stations]
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate station id in region config")

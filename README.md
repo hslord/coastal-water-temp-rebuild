@@ -36,17 +36,17 @@ The scripts that produced the table are in `reports/scripts/`. They are one-off 
 make install
 make test
 make lint
-PYTHONPATH=src uv run python -m coastal_water_temp.jobs.recent config/regions/northern-atlantic-coast.toml
-PYTHONPATH=src uv run python -m coastal_water_temp.jobs.monthly config/regions/northern-atlantic-coast.toml
+uv run cwt-recent config/regions/northern-atlantic-coast.toml
+uv run cwt-monthly config/regions/northern-atlantic-coast.toml
 ```
 The page is written to `site/`. The first monthly run fetches all history and takes about 20 to 25 minutes. Raw responses are cached in `cache/`, so an interrupted run resumes where it stopped.
 
 ## Project Structure
 - `config/regions/`: one TOML file per region, with the region `id`, `title` and `timezone`, and its stations (`id`, `source`, `name`).
-- `config/settings.toml`: settings shared by every region: the outlier screening thresholds, the recent-reading window, the history start years, and each source's address and request pause.
+- `config/settings.toml`: settings shared by every region: the outlier screening thresholds, the recent-reading window, the history start years, which region is the home page, and each source's address and request pause.
 - `src/coastal_water_temp/adapters/`: one module per data source, each with the same two functions.
-- `src/coastal_water_temp/means.py` and `render.py`: monthly-means storage and outlier screening, and the HTML page.
-- `src/coastal_water_temp/jobs/`: the daily (`recent`) and monthly jobs.
+- `src/coastal_water_temp/means.py`, `recent_readings.py` and `render.py`: monthly-means storage and outlier screening, the stored latest readings, and the HTML page (built from `templates/page.html`).
+- `src/coastal_water_temp/jobs/`: the daily (`recent`) and monthly jobs, run with `cwt-recent` and `cwt-monthly`.
 - `.github/workflows/`: the two scheduled Actions.
 
 To add a region, add one TOML file in `config/regions/`. Each region's page is published as `<region id>.html`.

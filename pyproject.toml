@@ -1,12 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "coastal-water-temp-rebuild"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
     "requests",
-    "pandas",
     "tzdata",
 ]
+
+[project.scripts]
+cwt-recent = "coastal_water_temp.jobs.recent:main"
+cwt-monthly = "coastal_water_temp.jobs.monthly:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/coastal_water_temp"]
 
 [dependency-groups]
 dev = [
@@ -16,7 +26,6 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
 
 [tool.ruff]
 extend-exclude = ["reports/scripts"]

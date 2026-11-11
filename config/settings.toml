@@ -31,6 +31,10 @@ active_window_days = 365
 # station's first reading, so years before a station began recording return no data.
 first_year = { ndbc = 1970, coops = 1990 }
 
+[site]
+# The region whose page is also published as the site's home page (index.html).
+home_region = "northern-atlantic-coast"
+
 [http]
 # Sent with every data request to identify this project, and how long to wait for a response.
 user_agent = "coastal-water-temp-rebuild"

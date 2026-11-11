@@ -45,11 +45,6 @@ def write_means(path, rows):
             w.writerow([r.station_id, r.year, r.month, r.n_obs, f"{r.mean_f:.3f}"])
 
 
-def stored_years(rows):
-    """Set of (station_id, year) that already have rows."""
-    return {(r.station_id, r.year) for r in rows}
-
-
 def merge_duplicates(rows):
     """One row per (station, year, month): rows with the same key are combined, weighted by n_obs.
 

@@ -90,3 +90,13 @@ def test_hourly_history_cache_is_reused(tmp_path):
 def test_unsupported_format_raises():
     with pytest.raises(ValueError):
         list(ndbc.parse("FOO BAR\n1 2\n"))
+
+
+@pytest.mark.parametrize("status", [403, 429])
+def test_blocked_status_raises_blocked_error(status):
+    from coastal_water_temp.adapters.errors import BlockedError
+
+    with pytest.raises(BlockedError):
+        ndbc.latest("44007", SETTINGS, get=lambda url: resp(status=status))
+    with pytest.raises(BlockedError):
+        ndbc.hourly_history("44007", 2024, SETTINGS, get=lambda url: resp(status=status))

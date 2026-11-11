@@ -93,3 +93,15 @@ def test_monthly_values_and_blank_months():
 def test_page_has_csv_download_button():
     html = render_page(REGION, MEANS, 2021, {}, NOW, SETTINGS)
     assert "downloadCsv()" in html and "test-coast.csv" in html
+
+
+def test_home_region_page_is_also_written_as_index(tmp_path):
+    from dataclasses import replace
+
+    from coastal_water_temp.render import write_site
+
+    html = render_page(REGION, MEANS, 2021, {}, NOW, SETTINGS)
+    write_site(tmp_path / "a", REGION, html, replace(SETTINGS, home_region="test-coast"))
+    assert (tmp_path / "a" / "index.html").read_text() == html == (tmp_path / "a" / "test-coast.html").read_text()
+    write_site(tmp_path / "b", REGION, html, replace(SETTINGS, home_region="other"))
+    assert not (tmp_path / "b" / "index.html").exists() and (tmp_path / "b" / "test-coast.html").exists()

@@ -41,9 +41,8 @@ def test_csv_round_trip_is_sorted_and_identical_on_rerun(tmp_path):
     assert p.read_text() == first
 
 
-def test_read_missing_file_is_empty_and_stored_years(tmp_path):
+def test_read_missing_file_is_empty(tmp_path):
     assert means.read_means(tmp_path / "none.csv") == []
-    assert means.stored_years([MeanRow("S", 2020, 1, 1, 1.0), MeanRow("S", 2020, 2, 1, 1.0)]) == {("S", 2020)}
 
 
 def jan(year, mean, n=100):

@@ -60,3 +60,9 @@ def test_duplicate_id_rejected(tmp_path):
     p = write(tmp_path, 'id="x"\ntitle="X"\ntimezone="UTC"\n' + s + s)
     with pytest.raises(ValueError, match="duplicate"):
         load_region(p, SETTINGS)
+
+
+def test_unknown_time_zone_rejected(tmp_path):
+    p = write(tmp_path, 'id="x"\ntitle="X"\ntimezone="Mars/Olympus"\n[[stations]]\nid="1"\nsource="ndbc"\nname="n"\n')
+    with pytest.raises(ValueError, match="time zone"):
+        load_region(p, SETTINGS)

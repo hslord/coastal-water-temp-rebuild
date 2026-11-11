@@ -4,9 +4,10 @@ import pytest
 from helpers import SETTINGS
 
 from coastal_water_temp import means
-from coastal_water_temp.adapters import coops
-from coastal_water_temp.jobs import monthly, recent
+from coastal_water_temp.adapters.errors import BlockedError
+from coastal_water_temp.jobs import monthly
 from coastal_water_temp.means import MeanRow
+from coastal_water_temp.recent_readings import write_recent
 
 REGION = """id = "t"
 title = "T"
@@ -46,7 +47,7 @@ def setup(tmp_path, recent_stations=("44007", "8447930"), rows=()):
     region = tmp_path / "t.toml"
     region.write_text(REGION)
     data = tmp_path / "data"
-    recent.write_recent(data / "recent" / "t.csv", {s: (utc(2027, 1, 20, 10), 50.0) for s in recent_stations})
+    write_recent(data / "recent" / "t.csv", {s: (utc(2027, 1, 20, 10), 50.0) for s in recent_stations})
     if rows:
         means.write_means(data / "means" / "t.csv", list(rows))
     return region, data
@@ -115,9 +116,9 @@ def test_block_leaves_stored_means_unchanged(tmp_path):
     before = (data / "means" / "t.csv").read_bytes()
 
     def blocked(station, year):
-        raise coops.BlockedError("HTTP 403")
+        raise BlockedError("HTTP 403")
 
-    with pytest.raises(coops.BlockedError):
+    with pytest.raises(BlockedError):
         monthly.run(region, data, tmp_path / "cache", tmp_path / "site", NOW, SETTINGS, {"ndbc": Fake({("44007", 2026): h(2026)}), "coops": blocked})
     assert (data / "means" / "t.csv").read_bytes() == before
 

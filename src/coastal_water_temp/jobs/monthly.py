@@ -12,9 +12,9 @@ from pathlib import Path
 
 from coastal_water_temp import means
 from coastal_water_temp.adapters import coops, ndbc
-from coastal_water_temp.jobs.recent import read_recent
+from coastal_water_temp.recent_readings import read_recent
 from coastal_water_temp.regions import load_region
-from coastal_water_temp.render import render_page
+from coastal_water_temp.render import render_page, write_site
 from coastal_water_temp.settings import default_path, load_settings
 
 
@@ -74,12 +74,16 @@ def run(region_path, data_dir="data", cache_dir="cache", site_dir="site", now=No
             new += means.monthly_rows(s.id, fetch[s.source](s.id, year))
     rows = means.merge_duplicates([r for r in rows if r.year <= end_year] + new)
     means.write_means(means_path, rows)
-    out = Path(site_dir) / f"{region.id}.html"
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render_page(region, rows, end_year, recent, now, settings), encoding="utf-8")
+    write_site(site_dir, region, render_page(region, rows, end_year, recent, now, settings), settings)
     return end_year, len(new)
 
 
-if __name__ == "__main__":
-    year, n = run(sys.argv[1])
+def main(argv=None):
+    """Command line: cwt-monthly <region file>."""
+    args = sys.argv[1:] if argv is None else argv
+    year, n = run(args[0])
     print(f"means through {year}; {n} new station-month rows")
+
+
+if __name__ == "__main__":
+    main()

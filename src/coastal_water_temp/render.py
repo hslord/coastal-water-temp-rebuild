@@ -1,5 +1,8 @@
 """Build a region's static HTML page. The CSV is built in the browser on click."""
 from html import escape
+from importlib import resources
+from pathlib import Path
+from string import Template
 from zoneinfo import ZoneInfo
 
 from coastal_water_temp.means import aggregate
@@ -42,49 +45,14 @@ def render_page(region, means_rows, end_year, recent, now, settings):
     head = "".join(_cell("th", c, None) for c in COLUMNS)
     body = "\n".join("<tr>" + "".join(_cell("td", t, h) for t, h in row) + "</tr>"
                      for row in table_rows(region, means_rows, end_year, recent, now, settings))
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{escape(title)}</title>
-<style>
-body {{ font-family: system-ui, sans-serif; margin: 16px; }}
-.wrap {{ overflow-x: auto; }}
-table {{ border-collapse: collapse; font-size: 14px; }}
-caption {{ font-weight: bold; text-align: left; padding-bottom: 8px; }}
-th, td {{ border: 1px solid #999; padding: 4px 8px; white-space: nowrap; }}
-td:nth-child(n+3) {{ text-align: right; }}
-td:nth-child(2) {{ text-align: left; }}
-button {{ margin-top: 12px; }}
-</style>
-</head>
-<body>
-<div class="wrap">
-<table id="t">
-<caption>{escape(title)}</caption>
-<thead><tr>{head}</tr></thead>
-<tbody>
-{body}
-</tbody>
-</table>
-</div>
-<button type="button" onclick="downloadCsv()">Download CSV</button>
-<script>
-function csvField(s) {{ return /[",\\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }}
-function csvText() {{
-  const rows = [...document.querySelectorAll('#t tr')].map(tr =>
-    [...tr.children].map(c => csvField(c.textContent.trim())).join(','));
-  return rows.join('\\n') + '\\n';
-}}
-function downloadCsv() {{
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csvText()], {{type: 'text/csv'}}));
-  a.download = '{escape(region.id)}.csv';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}}
-</script>
-</body>
-</html>
-"""
+    template = resources.files("coastal_water_temp").joinpath("templates/page.html").read_text(encoding="utf-8")
+    return Template(template).substitute(title=escape(title), head=head, body=body, region_id=escape(region.id))
+
+
+def write_site(site_dir, region, html, settings):
+    """Write <region id>.html, and also index.html when this is the home region in the settings."""
+    out = Path(site_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f"{region.id}.html").write_text(html, encoding="utf-8")
+    if region.id == settings.home_region:
+        (out / "index.html").write_text(html, encoding="utf-8")

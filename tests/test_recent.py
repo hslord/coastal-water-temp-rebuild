@@ -1,12 +1,14 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from helpers import SETTINGS
 
 from coastal_water_temp import means
-from coastal_water_temp.adapters import coops
+from coastal_water_temp.adapters.errors import BlockedError
 from coastal_water_temp.jobs import recent
 from coastal_water_temp.means import MeanRow
+from coastal_water_temp.recent_readings import read_recent, write_recent
 
 REGION = """id = "t"
 title = "T"
@@ -37,7 +39,7 @@ def setup(tmp_path, stored=None):
     data = tmp_path / "data"
     means.write_means(data / "means" / "t.csv", [MeanRow("44007", 2025, 1, 2, 15.0)])
     if stored:
-        recent.write_recent(data / "recent" / "t.csv", stored)
+        write_recent(data / "recent" / "t.csv", stored)
     return region, data
 
 
@@ -48,7 +50,7 @@ def adapters(ndbc_latest, coops_latest):
 def run(tmp_path, ad, stored=None):
     region, data = setup(tmp_path, stored)
     w = recent.run(region, data, tmp_path / "site", NOW, SETTINGS, ad)
-    return w, recent.read_recent(data / "recent" / "t.csv"), (tmp_path / "site" / "t.html").read_text()
+    return w, read_recent(data / "recent" / "t.csv"), (tmp_path / "site" / "t.html").read_text()
 
 
 def test_fresh_readings_are_stored_and_shown(tmp_path):
@@ -79,7 +81,7 @@ def test_block_stops_that_source_but_not_the_others(tmp_path):
 
     def blocked(i):
         calls.append(i)
-        raise coops.BlockedError("HTTP 403")
+        raise BlockedError("HTTP 403")
 
     w, recent, page = run(tmp_path, adapters(lambda i: (utc(2026, 11, 9, 20, 30), 52.7), blocked))
     assert calls == ["8447930"] and "44007" in recent and "8454000" not in recent
@@ -102,6 +104,16 @@ def test_means_file_is_not_touched(tmp_path):
 
 def test_recent_csv_round_trip(tmp_path):
     p = tmp_path / "r.csv"
-    recent.write_recent(p, {"b": (utc(2026, 1, 1, 5, 6), 1.25), "a": (utc(2026, 1, 1, 0, 0), 2.0)})
+    write_recent(p, {"b": (utc(2026, 1, 1, 5, 6), 1.25), "a": (utc(2026, 1, 1, 0, 0), 2.0)})
     assert p.read_text().splitlines()[1].startswith("a,2026-01-01T00:00:00Z")
-    assert recent.read_recent(p)["b"][0] == utc(2026, 1, 1, 5, 6)
+    assert read_recent(p)["b"][0] == utc(2026, 1, 1, 5, 6)
+
+
+def test_every_station_failing_raises_and_writes_nothing(tmp_path):
+    def boom(i):
+        raise RuntimeError("down")
+
+    region, data = setup(tmp_path)
+    with pytest.raises(RuntimeError, match="every station fetch failed"):
+        recent.run(region, data, tmp_path / "site", NOW, SETTINGS, adapters(boom, boom))
+    assert not (data / "recent").exists() and not (tmp_path / "site").exists()

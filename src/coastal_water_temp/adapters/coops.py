@@ -10,11 +10,9 @@ from pathlib import Path
 
 import requests
 
+from coastal_water_temp.adapters.errors import BlockedError
+
 _last_request = [0.0]
-
-
-class BlockedError(RuntimeError):
-    """The API answered 403 or 429. Stop; a rerun resumes from the cache."""
 
 
 def _make_get(settings):

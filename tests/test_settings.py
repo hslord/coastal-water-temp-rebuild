@@ -14,6 +14,8 @@ recent_window_hours = 12
 [history]
 active_window_days = 30
 first_year = { a = 1990 }
+[site]
+home_region = "a-region"
 [http]
 user_agent = "test"
 timeout_seconds = 5
@@ -37,7 +39,7 @@ def test_values_are_read_from_the_file(tmp_path):
     s = load_settings(p)
     assert (s.screening_max_gap_f, s.screening_min_years) == (10.0, 5)
     assert s.recent_window == timedelta(hours=12) and s.active_window == timedelta(days=30)
-    assert s.first_year == {"a": 1990}
+    assert s.first_year == {"a": 1990} and s.home_region == "a-region"
     assert s.sources["a"].min_interval_seconds == 0.5 and s.sources["a"].no_data_message == ""
 
 

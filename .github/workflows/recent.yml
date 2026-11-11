@@ -19,11 +19,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --locked
       - name: Update recent readings and build pages
-        env:
-          PYTHONPATH: src
         run: |
           for region in config/regions/*.toml; do
-            uv run python -m coastal_water_temp.jobs.recent "$region"
+            uv run cwt-recent "$region"
           done
       - name: Commit data
         run: |
@@ -31,9 +29,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data
           git diff --cached --quiet || git commit -m "Update recent readings"
+          git pull --rebase
           git push
-      - name: Make the first region the home page
-        run: cp "site/$(ls site | grep -v '^index.html$' | head -n 1)" site/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

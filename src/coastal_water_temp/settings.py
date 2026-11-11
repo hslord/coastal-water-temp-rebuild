@@ -20,6 +20,7 @@ class Settings:
     recent_window: timedelta
     active_window: timedelta
     first_year: dict
+    home_region: str
     user_agent: str
     timeout_seconds: float
     sources: dict  # name -> Source, in display order
@@ -43,6 +44,7 @@ def load_settings(path) -> Settings:
         recent_window=timedelta(hours=data["display"]["recent_window_hours"]),
         active_window=timedelta(days=data["history"]["active_window_days"]),
         first_year=first_year,
+        home_region=data["site"]["home_region"],
         user_agent=data["http"]["user_agent"],
         timeout_seconds=data["http"]["timeout_seconds"],
         sources=sources,
