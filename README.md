@@ -43,6 +43,7 @@ The page is written to `site/`. The first monthly run fetches all history and ta
 
 ## Project Structure
 - `config/regions/`: one TOML file per region, with the region `id`, `title` and `timezone`, and its stations (`id`, `source`, `name`).
+- `config/settings.toml`: settings shared by every region: the outlier screening thresholds, the recent-reading window, the history start years, and each source's address and request pause.
 - `src/coastal_water_temp/adapters/`: one module per data source, each with the same two functions.
 - `src/coastal_water_temp/means.py` and `render.py`: monthly-means storage and outlier screening, and the HTML page.
 - `src/coastal_water_temp/jobs/`: the daily (`recent`) and monthly jobs.

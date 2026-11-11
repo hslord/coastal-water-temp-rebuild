@@ -1,0 +1,35 @@
+# Settings used by every region. Region files (config/regions/) hold only the region's own details.
+
+[screening]
+# A station-month is left out of the monthly averages when its mean is this far (°F) from the
+# station's median for that calendar month, for stations with at least min_years years of that month.
+max_gap_f = 15.0
+min_years = 8
+
+[display]
+# The recent reading is shown only if it is newer than this.
+recent_window_hours = 48
+
+[history]
+# A source "has" a year when one of its stations with a reading in the last active_window_days has data.
+active_window_days = 365
+# How many completed years back to look for the latest year that every source has.
+end_year_lookback = 3
+# First year to try for a station with no stored rows (earlier than any station's first reading).
+first_year = { ndbc = 1970, coops = 1990 }
+
+[http]
+user_agent = "coastal-water-temp-rebuild"
+timeout_seconds = 60
+
+# Order here is the display order: NDBC buoys first, then CO-OPS stations.
+[sources.ndbc]
+base_url = "https://www.ndbc.noaa.gov"
+min_interval_seconds = 1.0
+station_page_url = "https://www.ndbc.noaa.gov/station_page.php?station={id}"
+
+[sources.coops]
+base_url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
+min_interval_seconds = 1.0
+station_page_url = "https://tidesandcurrents.noaa.gov/physocean.html?id={id}"
+no_data_message = "No data was found"

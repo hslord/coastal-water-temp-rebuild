@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from helpers import SETTINGS
 
 from coastal_water_temp.adapters import coops
 
@@ -21,17 +22,17 @@ def utc(*a):
 
 
 def test_latest_returns_time_and_fahrenheit():
-    assert coops.latest("8447930", get=lambda p: resp(LATEST)) == (utc(2026, 11, 9, 21, 48), 57.2)
+    assert coops.latest("8447930", SETTINGS, get=lambda p: resp(LATEST)) == (utc(2026, 11, 9, 21, 48), 57.2)
 
 
 def test_latest_none_for_no_data_answer_and_blank_value():
-    assert coops.latest("8447435", get=lambda p: resp(NO_DATA)) is None
+    assert coops.latest("8447435", SETTINGS, get=lambda p: resp(NO_DATA)) is None
     blank = '{"metadata":{},"data":[{"t":"2026-11-09 21:48","v":"","f":"1,1,1"}]}'
-    assert coops.latest("x", get=lambda p: resp(blank)) is None
+    assert coops.latest("x", SETTINGS, get=lambda p: resp(blank)) is None
 
 
 def test_hourly_history_drops_blank_values():
-    out = coops.hourly_history("8447930", 2024, get=lambda p: resp(HOURLY))
+    out = coops.hourly_history("8447930", 2024, SETTINGS, get=lambda p: resp(HOURLY))
     assert [h for h, _ in out] == [
         utc(2024, 1, 1, 0), utc(2024, 1, 1, 1), utc(2024, 1, 1, 2), utc(2024, 3, 10, 11), utc(2024, 3, 10, 13),
     ]
@@ -40,25 +41,25 @@ def test_hourly_history_drops_blank_values():
 
 def test_hourly_history_requests_the_full_year_hourly():
     seen = {}
-    coops.hourly_history("8447930", 2024, get=lambda p: seen.update(p) or resp(HOURLY))
+    coops.hourly_history("8447930", 2024, SETTINGS, get=lambda p: seen.update(p) or resp(HOURLY))
     assert seen == {"station": "8447930", "interval": "h", "begin_date": "20240101", "end_date": "20241231"}
 
 
 def test_hourly_history_no_data_year_is_empty():
-    assert coops.hourly_history("8447930", 1994, get=lambda p: resp(NO_DATA)) == []
+    assert coops.hourly_history("8447930", 1994, SETTINGS, get=lambda p: resp(NO_DATA)) == []
 
 
 @pytest.mark.parametrize("status", [403, 429])
 def test_blocked_stops_with_blocked_error(status):
     with pytest.raises(coops.BlockedError):
-        coops.latest("8447930", get=lambda p: resp("{}", status))
+        coops.latest("8447930", SETTINGS, get=lambda p: resp("{}", status))
 
 
 def test_other_failures_raise():
     with pytest.raises(RuntimeError):
-        coops.latest("8447930", get=lambda p: resp("", 500))
+        coops.latest("8447930", SETTINGS, get=lambda p: resp("", 500))
     with pytest.raises(RuntimeError):
-        coops.latest("8447930", get=lambda p: resp('{"error":{"message":"Something else"}}'))
+        coops.latest("8447930", SETTINGS, get=lambda p: resp('{"error":{"message":"Something else"}}'))
 
 
 def test_cache_is_reused_so_a_rerun_makes_no_request(tmp_path):
@@ -68,11 +69,11 @@ def test_cache_is_reused_so_a_rerun_makes_no_request(tmp_path):
         calls.append(p)
         return resp(HOURLY)
 
-    a = coops.hourly_history("8447930", 2024, get=get, cache_dir=tmp_path)
-    b = coops.hourly_history("8447930", 2024, get=get, cache_dir=tmp_path)
+    a = coops.hourly_history("8447930", 2024, SETTINGS, get=get, cache_dir=tmp_path)
+    b = coops.hourly_history("8447930", 2024, SETTINGS, get=get, cache_dir=tmp_path)
     assert a == b and len(calls) == 1
 
 
 def test_no_data_answer_is_not_cached(tmp_path):
-    coops.hourly_history("8447930", 1994, get=lambda p: resp(NO_DATA), cache_dir=tmp_path)
+    coops.hourly_history("8447930", 1994, SETTINGS, get=lambda p: resp(NO_DATA), cache_dir=tmp_path)
     assert list(tmp_path.iterdir()) == []

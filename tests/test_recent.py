@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
+
+from helpers import SETTINGS
 
 from coastal_water_temp import means
 from coastal_water_temp.adapters import coops
@@ -41,12 +42,12 @@ def setup(tmp_path, stored=None):
 
 
 def adapters(ndbc_latest, coops_latest):
-    return {"ndbc": SimpleNamespace(latest=ndbc_latest), "coops": SimpleNamespace(latest=coops_latest)}
+    return {"ndbc": ndbc_latest, "coops": coops_latest}
 
 
 def run(tmp_path, ad, stored=None):
     region, data = setup(tmp_path, stored)
-    w = recent.run(region, data, tmp_path / "site", NOW, ad)
+    w = recent.run(region, data, tmp_path / "site", NOW, SETTINGS, ad)
     return w, recent.read_recent(data / "recent" / "t.csv"), (tmp_path / "site" / "t.html").read_text()
 
 
@@ -95,7 +96,7 @@ def test_means_file_is_not_touched(tmp_path):
     region, data = setup(tmp_path)
     p = Path(data) / "means" / "t.csv"
     before = p.read_bytes()
-    recent.run(region, data, tmp_path / "site", NOW, adapters(lambda i: None, lambda i: None))
+    recent.run(region, data, tmp_path / "site", NOW, SETTINGS, adapters(lambda i: None, lambda i: None))
     assert p.read_bytes() == before
 
 

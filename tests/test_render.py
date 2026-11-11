@@ -1,8 +1,10 @@
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 
-from coastal_water_temp.config import Region, Station
+from helpers import SETTINGS
+
 from coastal_water_temp.means import MeanRow
+from coastal_water_temp.regions import Region, Station
 from coastal_water_temp.render import COLUMNS, render_page, table_rows
 
 REGION = Region("test-coast", "Test Coast", "America/New_York", (
@@ -42,7 +44,7 @@ class Cells(HTMLParser):
 
 def page(recent, now=NOW):
     p = Cells()
-    p.feed(render_page(REGION, MEANS, 2021, recent, now))
+    p.feed(render_page(REGION, MEANS, 2021, recent, now, SETTINGS))
     return p
 
 
@@ -82,12 +84,12 @@ def test_time_uses_edt_in_summer():
 
 
 def test_monthly_values_and_blank_months():
-    rows = table_rows(REGION, MEANS, 2021, {}, NOW)
+    rows = table_rows(REGION, MEANS, 2021, {}, NOW, SETTINGS)
     assert [c[0] for c in rows[0][4:]] == ["20.0"] + [""] * 11
     assert rows[1][4 + 6][0] == "70.0"
     assert all(c[0] == "" for c in rows[2][4:])
 
 
 def test_page_has_csv_download_button():
-    html = render_page(REGION, MEANS, 2021, {}, NOW)
+    html = render_page(REGION, MEANS, 2021, {}, NOW, SETTINGS)
     assert "downloadCsv()" in html and "test-coast.csv" in html

@@ -1,5 +1,4 @@
 """Build a region's static HTML page. The CSV is built in the browser on click."""
-from datetime import timedelta
 from html import escape
 from zoneinfo import ZoneInfo
 
@@ -7,27 +6,22 @@ from coastal_water_temp.means import aggregate
 
 MONTHS = ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
 COLUMNS = ("Station ID", "Station name", "Recent temperature (°F)", "Observation time", *MONTHS)
-STATION_URL = {
-    "ndbc": "https://www.ndbc.noaa.gov/station_page.php?station={}",
-    "coops": "https://tidesandcurrents.noaa.gov/physocean.html?id={}",
-}
-RECENT_WINDOW = timedelta(hours=48)
 
 
-def table_rows(region, means_rows, end_year, recent, now):
+def table_rows(region, means_rows, end_year, recent, now, settings):
     """One row per configured station, in config order: a list of (text, href or None) cells.
 
     `recent` maps station id to (observation_time_utc, temp_f) or None. A reading older than
-    48 hours is shown as blank cells, like no reading.
+    the recent window in settings is shown as blank cells, like no reading.
     """
-    monthly = aggregate(means_rows, end_year)
+    monthly = aggregate(means_rows, end_year, settings.screening_max_gap_f, settings.screening_min_years)
     tz = ZoneInfo(region.timezone)
     rows = []
     for s in region.stations:
         cells = [(s.id, None), (s.name, None)]
         r = recent.get(s.id)
-        if r and now - r[0] <= RECENT_WINDOW:
-            cells += [(f"{r[1]:.1f}", STATION_URL[s.source].format(s.id)), (r[0].astimezone(tz).strftime("%Y-%m-%d %H:%M %Z"), None)]
+        if r and now - r[0] <= settings.recent_window:
+            cells += [(f"{r[1]:.1f}", settings.sources[s.source].station_page_url.format(id=s.id)), (r[0].astimezone(tz).strftime("%Y-%m-%d %H:%M %Z"), None)]
         else:
             cells += [("", None), ("", None)]
         by_month = monthly.get(s.id, {})
@@ -43,11 +37,11 @@ def _cell(tag, text, href):
     return f"<{tag}>{body}</{tag}>"
 
 
-def render_page(region, means_rows, end_year, recent, now):
+def render_page(region, means_rows, end_year, recent, now, settings):
     title = f"Monthly Average Temperature (°F) for {region.title}"
     head = "".join(_cell("th", c, None) for c in COLUMNS)
     body = "\n".join("<tr>" + "".join(_cell("td", t, h) for t, h in row) + "</tr>"
-                     for row in table_rows(region, means_rows, end_year, recent, now))
+                     for row in table_rows(region, means_rows, end_year, recent, now, settings))
     return f"""<!doctype html>
 <html lang="en">
 <head>

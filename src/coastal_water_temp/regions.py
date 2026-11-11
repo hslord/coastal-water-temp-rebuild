@@ -1,9 +1,7 @@
-"""Region config: one TOML file per region."""
+"""Regions: one TOML file per region in config/regions/."""
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-
-SOURCES = ("ndbc", "coops")  # display order: NDBC buoys first, then CO-OPS
 
 
 @dataclass(frozen=True)
@@ -21,15 +19,17 @@ class Region:
     stations: tuple[Station, ...]
 
 
-def load_region(path) -> Region:
-    """Read a region TOML file. Stations come back sorted: NDBC first, then CO-OPS, each by ID."""
+def load_region(path, settings) -> Region:
+    """Read a region TOML file. Stations come back sorted by source in the order of settings.sources
+    (NDBC first, then CO-OPS), each source by ID."""
+    order = list(settings.sources)
     data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
     stations = [Station(s["id"], s["source"], s["name"]) for s in data["stations"]]
     for s in stations:
-        if s.source not in SOURCES:
+        if s.source not in order:
             raise ValueError(f"station {s.id}: unknown source {s.source!r}")
     ids = [s.id for s in stations]
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate station id in region config")
-    stations.sort(key=lambda s: (SOURCES.index(s.source), s.id))
+    stations.sort(key=lambda s: (order.index(s.source), s.id))
     return Region(data["id"], data["title"], data["timezone"], tuple(stations))

@@ -1,7 +1,7 @@
 """NDBC adapter: realtime file for `latest`, yearly stdmet files for `hourly_history`.
 
-Formats verified against tests/fixtures. Access rule (the same as CO-OPS): serial requests,
-1 per second.
+Formats verified against tests/fixtures. Requests are serial with the pause set in
+config/settings.toml.
 """
 import gzip
 import time
@@ -11,20 +11,21 @@ from pathlib import Path
 
 import requests
 
-BASE = "https://www.ndbc.noaa.gov"
-HEADERS = {"User-Agent": "coastal-water-temp-rebuild"}
-
-
-MIN_INTERVAL = 1.0
 _last_request = [0.0]
 
 
-def _get(url):
-    wait = MIN_INTERVAL - (time.monotonic() - _last_request[0])
-    if wait > 0:
-        time.sleep(wait)
-    _last_request[0] = time.monotonic()
-    return requests.get(url, headers=HEADERS, timeout=60)
+def _make_get(settings):
+    """HTTP GET that waits the source's minimum interval between requests."""
+    source = settings.sources["ndbc"]
+
+    def get(url):
+        wait = source.min_interval_seconds - (time.monotonic() - _last_request[0])
+        if wait > 0:
+            time.sleep(wait)
+        _last_request[0] = time.monotonic()
+        return requests.get(url, headers={"User-Agent": settings.user_agent}, timeout=settings.timeout_seconds)
+
+    return get
 
 
 def c_to_f(c):
@@ -57,12 +58,13 @@ def parse(text):
         yield datetime(year, int(f[i["MM"]]), int(f[i["DD"]]), int(f[i["hh"]]), minute, tzinfo=UTC), float(f[i["WTMP"]])
 
 
-def latest(station_id, get=_get):
+def latest(station_id, settings, get=None):
     """(observation_time_utc, temp_f) of the newest valid reading, or None if there is none.
 
     No realtime file (HTTP 404, as for 44005 and 44018) means no reading. Other failures raise.
     """
-    r = get(f"{BASE}/data/realtime2/{station_id}.txt")
+    get = get or _make_get(settings)
+    r = get(f"{settings.sources['ndbc'].base_url}/data/realtime2/{station_id}.txt")
     if r.status_code == 404:
         return None
     if r.status_code != 200:
@@ -74,7 +76,7 @@ def latest(station_id, get=_get):
     return t, c_to_f(c)
 
 
-def hourly_history(station_id, year, get=_get, cache_dir=None):
+def hourly_history(station_id, year, settings, get=None, cache_dir=None):
     """[(utc_hour, temp_f)] for the year. A clock hour counts if it has at least one valid
     reading; its value is the mean of the valid readings in that hour. A missing file (HTTP 404)
     gives []. Other failures raise. With cache_dir, a downloaded file is kept as
@@ -84,7 +86,8 @@ def hourly_history(station_id, year, get=_get, cache_dir=None):
     if path and path.exists():
         raw = path.read_bytes()
     else:
-        r = get(f"{BASE}/data/historical/stdmet/{station_id}h{year}.txt.gz")
+        get = get or _make_get(settings)
+        r = get(f"{settings.sources['ndbc'].base_url}/data/historical/stdmet/{station_id}h{year}.txt.gz")
         if r.status_code == 404:
             return []
         if r.status_code != 200:

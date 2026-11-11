@@ -2,7 +2,7 @@
 
 Reads (never writes) data/means/<region id>.csv. Writes data/recent/<region id>.csv and
 site/<region id>.html. A failed fetch keeps the stored reading; the page blanks any reading
-older than 48 hours.
+older than the recent window in config/settings.toml.
 """
 import csv
 import sys
@@ -13,10 +13,10 @@ import requests
 
 from coastal_water_temp import means
 from coastal_water_temp.adapters import coops, ndbc
-from coastal_water_temp.config import load_region
+from coastal_water_temp.regions import load_region
 from coastal_water_temp.render import render_page
+from coastal_water_temp.settings import default_path, load_settings
 
-ADAPTERS = {"ndbc": ndbc, "coops": coops}
 TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
@@ -39,10 +39,20 @@ def write_recent(path, recent):
             w.writerow((s, t.strftime(TIME_FORMAT), f"{v:.1f}"))
 
 
-def run(region_path, data_dir="data", site_dir="site", now=None, adapters=ADAPTERS):
+def make_latest(settings):
+    """{source name: function(station_id) -> (time, temp_f) or None}"""
+    return {
+        "ndbc": lambda station: ndbc.latest(station, settings),
+        "coops": lambda station: coops.latest(station, settings),
+    }
+
+
+def run(region_path, data_dir="data", site_dir="site", now=None, settings=None, latest=None):
     """Returns a list of warning strings (failed fetches). Never raises for a station fetch failure."""
     now = now or datetime.now(UTC)
-    region = load_region(region_path)
+    settings = settings or load_settings(default_path(region_path))
+    latest = latest or make_latest(settings)
+    region = load_region(region_path, settings)
     recent_path = Path(data_dir) / "recent" / f"{region.id}.csv"
     recent = read_recent(recent_path)
     warnings = []
@@ -52,7 +62,7 @@ def run(region_path, data_dir="data", site_dir="site", now=None, adapters=ADAPTE
             warnings.append(f"{s.id}: skipped, {s.source} is blocking requests")
             continue
         try:
-            got = adapters[s.source].latest(s.id)
+            got = latest[s.source](s.id)
         except coops.BlockedError as e:
             blocked.add(s.source)
             warnings.append(f"{s.id}: {e}")
@@ -67,7 +77,7 @@ def run(region_path, data_dir="data", site_dir="site", now=None, adapters=ADAPTE
     end_year = max((r.year for r in rows), default=0)  # the monthly job writes only years up to the common end year
     out = Path(site_dir) / f"{region.id}.html"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(render_page(region, rows, end_year, recent, now), encoding="utf-8")
+    out.write_text(render_page(region, rows, end_year, recent, now, settings), encoding="utf-8")
     return warnings
 
 

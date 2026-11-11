@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 import pytest
+from helpers import SETTINGS
 
 from coastal_water_temp import means
 from coastal_water_temp.adapters import coops
@@ -54,7 +55,7 @@ def setup(tmp_path, recent_stations=("44007", "8447930"), rows=()):
 def run(tmp_path, fake_ndbc, fake_coops, **kw):
     region, data = setup(tmp_path, **kw)
     fetch = {"ndbc": fake_ndbc, "coops": fake_coops}
-    return monthly.run(region, data, tmp_path / "cache", tmp_path / "site", NOW, fetch), data
+    return monthly.run(region, data, tmp_path / "cache", tmp_path / "site", NOW, SETTINGS, fetch), data
 
 
 def h(y, m=1):
@@ -104,7 +105,7 @@ def test_rerun_with_unchanged_input_gives_identical_means(tmp_path):
     _, data = run(tmp_path, ndbc, cps)
     first = (data / "means" / "t.csv").read_bytes()
     region = tmp_path / "t.toml"
-    monthly.run(region, data, tmp_path / "cache", tmp_path / "site", NOW, {"ndbc": ndbc, "coops": cps})
+    monthly.run(region, data, tmp_path / "cache", tmp_path / "site", NOW, SETTINGS, {"ndbc": ndbc, "coops": cps})
     assert (data / "means" / "t.csv").read_bytes() == first
 
 
@@ -117,7 +118,7 @@ def test_block_leaves_stored_means_unchanged(tmp_path):
         raise coops.BlockedError("HTTP 403")
 
     with pytest.raises(coops.BlockedError):
-        monthly.run(region, data, tmp_path / "cache", tmp_path / "site", NOW, {"ndbc": Fake({("44007", 2026): h(2026)}), "coops": blocked})
+        monthly.run(region, data, tmp_path / "cache", tmp_path / "site", NOW, SETTINGS, {"ndbc": Fake({("44007", 2026): h(2026)}), "coops": blocked})
     assert (data / "means" / "t.csv").read_bytes() == before
 
 

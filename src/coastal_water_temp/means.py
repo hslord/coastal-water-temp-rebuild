@@ -5,12 +5,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-# Screening for bad sensor readings: a station-month whose mean is this far
-# from the station's median for that calendar month is left out of the table values, when the
-# station has at least MIN_YEARS years of that month. Stored rows are never changed.
-MAX_GAP_F = 15.0
-MIN_YEARS = 8
-
 FIELDS = ("station_id", "year", "month", "n_obs", "mean_f")
 
 
@@ -72,8 +66,13 @@ def merge_duplicates(rows):
     return out
 
 
-def screen(rows, end_year, max_gap=MAX_GAP_F, min_years=MIN_YEARS):
-    """Split rows up to end_year into (kept, excluded) by the median-gap rule above."""
+def screen(rows, end_year, max_gap, min_years):
+    """Split rows up to end_year into (kept, excluded).
+
+    A station-month is excluded when its mean is max_gap °F or more from the station's median
+    for that calendar month, for stations with at least min_years years of that month. The
+    stored rows are never changed.
+    """
     by_month = defaultdict(list)
     for r in merge_duplicates(rows):
         if r.year <= end_year:
@@ -86,11 +85,11 @@ def screen(rows, end_year, max_gap=MAX_GAP_F, min_years=MIN_YEARS):
     return kept, excluded
 
 
-def aggregate(rows, end_year):
+def aggregate(rows, end_year, max_gap, min_years):
     """{station_id: {month: weighted mean °F}} over screened years up to end_year. Months with no data are absent."""
     total = defaultdict(float)
     count = defaultdict(int)
-    for r in screen(rows, end_year)[0]:
+    for r in screen(rows, end_year, max_gap, min_years)[0]:
         total[(r.station_id, r.month)] += r.mean_f * r.n_obs
         count[(r.station_id, r.month)] += r.n_obs
     out = defaultdict(dict)

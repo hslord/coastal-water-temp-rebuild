@@ -1,8 +1,9 @@
 from pathlib import Path
 
 import pytest
+from helpers import SETTINGS
 
-from coastal_water_temp.config import load_region
+from coastal_water_temp.regions import load_region
 
 REGION = Path(__file__).parent.parent / "config" / "regions" / "northern-atlantic-coast.toml"
 
@@ -14,14 +15,14 @@ def write(tmp_path, body):
 
 
 def test_northern_atlantic_coast_has_22_stations():
-    r = load_region(REGION)
+    r = load_region(REGION, SETTINGS)
     assert r.title == "Northern Atlantic Coast"
     assert r.timezone == "America/New_York"
     assert len(r.stations) == 22
 
 
 def test_order_is_ndbc_first_then_coops_ascending():
-    ids = [s.id for s in load_region(REGION).stations]
+    ids = [s.id for s in load_region(REGION, SETTINGS).stations]
     assert ids[:7] == ["44005", "44007", "44008", "44011", "44013", "44018", "44020"]
     assert ids[7:] == sorted(ids[7:]) and len(ids[7:]) == 15
 
@@ -44,18 +45,18 @@ id = "1111111"
 source = "coops"
 name = "C"
 ''')
-    r = load_region(p)
+    r = load_region(p, SETTINGS)
     assert [s.id for s in r.stations] == ["44999", "1111111", "9999999"]
 
 
 def test_unknown_source_rejected(tmp_path):
     p = write(tmp_path, 'id="x"\ntitle="X"\ntimezone="UTC"\n[[stations]]\nid="1"\nsource="foo"\nname="n"\n')
     with pytest.raises(ValueError, match="unknown source"):
-        load_region(p)
+        load_region(p, SETTINGS)
 
 
 def test_duplicate_id_rejected(tmp_path):
     s = '[[stations]]\nid="1"\nsource="ndbc"\nname="n"\n'
     p = write(tmp_path, 'id="x"\ntitle="X"\ntimezone="UTC"\n' + s + s)
     with pytest.raises(ValueError, match="duplicate"):
-        load_region(p)
+        load_region(p, SETTINGS)
