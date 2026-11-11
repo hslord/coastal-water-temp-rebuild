@@ -28,7 +28,7 @@ class Cells(HTMLParser):
             self._in = tag
             if tag != "caption":
                 self.rows[-1].append("")
-        if tag == "a":
+        if tag == "a" and self._in == "td":  # table cells only, not the footer
             self.links.append(dict(attrs)["href"])
 
     def handle_endtag(self, tag):
