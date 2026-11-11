@@ -21,10 +21,10 @@ def table_rows(region, means_rows, end_year, recent, now, settings):
     tz = ZoneInfo(region.timezone)
     rows = []
     for s in region.stations:
-        cells = [(s.id, None), (s.name, None)]
+        cells = [(s.id, None), (s.name, settings.sources[s.source].station_page_url.format(id=s.id))]
         r = recent.get(s.id)
         if r and now - r[0] <= settings.recent_window:
-            cells += [(f"{r[1]:.1f}", settings.sources[s.source].station_page_url.format(id=s.id)), (r[0].astimezone(tz).strftime("%Y-%m-%d %H:%M %Z"), None)]
+            cells += [(f"{r[1]:.1f}", None), (r[0].astimezone(tz).strftime("%Y-%m-%d %H:%M %Z"), None)]
         else:
             cells += [("", None), ("", None)]
         by_month = monthly.get(s.id, {})

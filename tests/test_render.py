@@ -55,11 +55,12 @@ def test_title_columns_and_one_row_per_station_in_config_order():
     assert [r[0] for r in p.rows[1:]] == ["44007", "8447930", "8454049"]
 
 
-def test_recent_cells_link_to_station_pages_and_names_are_plain_text():
+def test_station_names_link_to_station_pages_and_temperatures_are_plain_text():
     recent = {"44007": (datetime(2026, 1, 15, 17, 18, tzinfo=UTC), 41.234), "8447930": (datetime(2026, 1, 15, 17, 0, tzinfo=UTC), 40.0)}
     p = page(recent)
     assert p.links == ["https://www.ndbc.noaa.gov/station_page.php?station=44007",
-                       "https://tidesandcurrents.noaa.gov/physocean.html?id=8447930"]
+                       "https://tidesandcurrents.noaa.gov/physocean.html?id=8447930",
+                       "https://tidesandcurrents.noaa.gov/physocean.html?id=8454049"]
     assert p.rows[1][1] == "BUOY & Co"
     assert p.rows[1][2:4] == ["41.2", "2026-01-15 12:18 EST"]
 
@@ -68,7 +69,7 @@ def test_no_reading_or_reading_older_than_48_hours_is_blank_and_keeps_means():
     old = datetime(2026, 1, 13, 17, 59, tzinfo=UTC)
     p = page({"44007": (old, 41.0)})
     assert p.rows[1][2:4] == ["", ""] and p.rows[3][2:4] == ["", ""]
-    assert p.links == []
+    assert len(p.links) == 3  # names still link when there is no recent reading
     assert p.rows[1][4] == "20.0"  # January weighted mean, still shown
 
 
