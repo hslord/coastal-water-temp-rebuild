@@ -26,6 +26,7 @@ $body
 </table>
 </div>
 <button type="button" onclick="downloadCsv()">Download CSV</button>
+<p>Water temperature data comes from NOAA NDBC and NOAA CO-OPS. This project is not affiliated with or endorsed by NOAA. <a href="https://github.com/hslord/coastal-water-temp-rebuild">Source code and data on GitHub</a></p>
 <script>
 function csvField(s) { return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 function csvText() {
