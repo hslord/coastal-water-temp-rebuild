@@ -4,7 +4,7 @@ A rebuild of the decommissioned NOAA NCEI Coastal Water Temperature Guide.
 
 The project currently covers one region, the Northern Atlantic Coast, with its stations listed in `config/regions/northern-atlantic-coast.toml`. A region is added with one config file in `config/regions/` that names its stations from NDBC or CO-OPS. Each region gets its own page.
 
-**Live page:** link to be added after the first deploy.
+**Live page:** [hslord.github.io/coastal-water-temp-rebuild](https://hslord.github.io/coastal-water-temp-rebuild/)
 
 ## Data Refresh Rules
 - A daily GitHub Action refreshes the recent temperature for every station.
